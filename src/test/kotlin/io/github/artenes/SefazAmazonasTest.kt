@@ -60,6 +60,15 @@ class SefazAmazonasTest {
         assertEquals("RL", coupon.products.first().unit)
         assertEquals(359, coupon.products.first().price)
         assertEquals(65, coupon.products.first().tax)
+        assertEquals("135925", coupon.products.first().code)
+        assertEquals("07896006413851", coupon.products.first().barcode)
+
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun throws_exception_when_not_enough_data_is_returned_from_request() {
+
+        api.getCouponFromUrl("https://sistemas.sefaz.am.gov.br")
 
     }
 

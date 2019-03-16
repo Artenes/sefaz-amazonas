@@ -1,6 +1,6 @@
 package io.github.artenes
 
-import org.jsoup.Jsoup
+import java.text.ParseException
 import java.text.SimpleDateFormat
 
 /**
@@ -8,72 +8,98 @@ import java.text.SimpleDateFormat
  */
 class SefazCouponParser {
 
+    /**
+     * Parse an html page to a coupon
+     */
     fun parse(html: String): Coupon {
 
-        val document = Jsoup.parse(html)
+        val extractor = HtmlCouponData(html)
+        return parse(extractor)
 
-        //it is easier to get all span tags than go through the whole html tree that it is a huge mess
-        //so we use set indexes to access this data, if one is out of place this will give wrong data
-        val spans = document.getElementsByTag("span")
+    }
+
+    /**
+     * Use the given couponData to create coupon
+     * This class is used mostly in tests
+     *
+     * @param couponData the data to use to create the coupon
+     * @throws IllegalArgumentException if any give data is invalid
+     */
+    internal fun parse(couponData: CouponData): Coupon {
+
+        if (!couponData.hasEnoughDataToBeParsed()) {
+            throw IllegalArgumentException("The content from the given url is invalid (not enough data to be parsed)")
+        }
+
+        try {
+            return parseToCoupon(couponData)
+        } catch (exception: StringIndexOutOfBoundsException) {
+            throw IllegalArgumentException(exception.message, exception)
+        } catch (exception: ParseException) {
+            throw IllegalArgumentException(exception.message, exception)
+        } catch (exception: NumberFormatException) {
+            throw IllegalArgumentException(exception.message, exception)
+        } catch (exception: IndexOutOfBoundsException) {
+            throw IllegalArgumentException(exception.message, exception)
+        }
+
+    }
+
+    /**
+     * Parses the data to a coupon. Created mostly to resume
+     * this huge logic block to a one method call
+     */
+    private fun parseToCoupon(couponData: CouponData): Coupon {
 
         //remove white space from access key
-        val accessKey = spans[0].text().replace(" ", "")
+        val accessKey = couponData.accessKey.replace(" ", "")
 
         //extract the date from a field that has it then convert to unix timestamp
-        val dateTime = SimpleDateFormat("dd/MM/yyyy HH:mm:ss").parse(spans[6].text()
-                .subSequence(0, 18).toString()).time
+        val dateTime = SimpleDateFormat("dd/MM/yyyy HH:mm:ss").parse(couponData.dateTime.subSequence(0, 18).toString()).time
 
         //remove the comma to convert a value to cents (e.g 34,12 would bge 3412 cents)
-        val value = spans[8].text().replace(",", "").toLong()
+        val value = couponData.value.replace(",", "").toLong()
 
         //remove all specials characters from cnpj
-        val companyCnpj = spans[9].text().replace(".", "")
-                .replace("/", "").replace("-", "")
+        val companyCnpj = couponData.companyCnpj.replace(".", "").replace("/", "").replace("-", "")
 
         //extract the city name from a field that has it then trim it
-        val companyCity = spans[37].text().split("-")[1].trim()
+        val companyCity = couponData.companyCity.split("-")[1].trim()
 
-        val companyName = spans[10].text()
-        val companyStateRegistration = spans[11].text()
-        val companyAddress = spans[34].text()
-        val companyDistrict = spans[35].text()
-        val companyState = spans[12].text()
+        val companyName = couponData.companyName
+        val companyStateRegistration = couponData.companyStateRegistration
+        val companyAddress = couponData.companyAddress
+        val companyDistrict = couponData.companyDistrict
+        val companyState = couponData.companyState
 
         //same logic, removing the comma will convert values to cents
-        val icmsBase = spans[59].text().replace(",", "").toLong()
-        val icms = spans[60].text().replace(",", "").toLong()
-        val tax = spans[73].text().replace(",", "").toLong()
+        val icmsBase = couponData.icmsBase.replace(",", "").toLong()
+        val icms = couponData.icms.replace(",", "").toLong()
+        val tax = couponData.tax.replace(",", "").toLong()
 
         //create company instance
-        val company = Company(companyCnpj, companyName, companyStateRegistration, companyAddress,
-                companyDistrict, companyCity, companyState)
+        val company = Company(companyCnpj, companyName, companyStateRegistration, companyAddress, companyDistrict, companyCity, companyState)
 
         //the list of products has a bunch of span tags, which will be easier to access instead
         // of going through the DOM tree
         val products = mutableListOf<Product>()
-        val productsTags = document.getElementById("Prod").getElementsByTag("span")
-        var index = 0
+        val productIterator = couponData.productsIterator
 
-        //this list will have the data of each item in a interval of 32 fields
-        while (index < productsTags.size) {
-            val productIndex = productsTags[index + 0].text().toInt()
-            val productName = productsTags[index + 1].text()
+        while (productIterator.hasNext()) {
+            val htmlProduct = productIterator.next()
+
+            val productIndex = htmlProduct.index.toInt()
+            val productName = htmlProduct.name
             //conversion to cents
-            val productAmount = productsTags[index + 2].text().replace(",", ".").toFloat()
-            val productUnit = productsTags[index + 3].text()
-            val productPrice = productsTags[index + 4].text().replace(",", "").toLong()
-            val productTax = productsTags[index + 25].text().replace(".", "").toLong()
+            val productAmount = htmlProduct.amount.replace(",", ".").toFloat()
+            val productUnit = htmlProduct.unit
+            val productPrice = htmlProduct.price.replace(",", "").toLong()
+            val productCode = htmlProduct.code
+            val productBarCode = htmlProduct.barcode
+            val productTax = htmlProduct.tax.replace(".", "").toLong()
 
-            val product = Product(productIndex, productName, productAmount, productUnit, productPrice, productTax)
+            val product = Product(productIndex, productCode, productName, productAmount, productUnit, productPrice, productTax, productBarCode)
             products.add(product)
-
-            //if the product does not has taxes, there is less fields to go trough
-            //so sum up 30 instead of 32 fields to go to the next item
-            index += if (productTax == 0L) {
-                30
-            } else {
-                32
-            }
         }
 
         return Coupon(accessKey, dateTime, value, icmsBase, icms, tax, company, products)

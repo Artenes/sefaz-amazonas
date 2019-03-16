@@ -20,7 +20,7 @@ class SefazCouponParserText {
 
         val mockExtractor = Mockito.mock(CouponData::class.java)
         val mockIterator = Mockito.mock(Iterator::class.java)
-        val mockProduct = HtmlProduct("1", "", "", "1", "", "1", "1", "")
+        val mockProduct = HtmlProduct("1", "", "", "1", "", "1", "1,1000", "1", "")
 
         Mockito.`when`(mockIterator.hasNext()).thenReturn(true).thenReturn(false)
         Mockito.`when`(mockIterator.next()).thenReturn(mockProduct)

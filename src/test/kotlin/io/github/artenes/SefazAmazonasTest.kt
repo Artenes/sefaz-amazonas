@@ -62,6 +62,7 @@ class SefazAmazonasTest {
         assertEquals(65, coupon.products.first().tax)
         assertEquals("135925", coupon.products.first().code)
         assertEquals("07896006413851", coupon.products.first().barcode)
+        assertEquals(359, coupon.products.first().unitPrice)
 
     }
 

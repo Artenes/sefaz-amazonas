@@ -20,9 +20,10 @@ class HtmlProductIterator(private val elements: Elements?) : Iterator<HtmlProduc
         val productName = elements?.get(index + 1)?.text() ?: ""
         val productAmount = elements?.get(index + 2)?.text() ?: ""
         val productUnit = elements?.get(index + 3)?.text() ?: ""
-        val productPrice = elements?.get(index + 4)?.text() ?: ""
+        val productTotal = elements?.get(index + 4)?.text() ?: ""
         val productCode = elements?.get(index + 5)?.text() ?: ""
         val productBarCode = elements?.get(index + 18)?.text() ?: ""
+        val productUnitPrice = elements?.get(index + 21)?.text() ?: ""
         val productTax = elements?.get(index + 25)?.text() ?: ""
 
         //if the product does not has taxes, there is less fields to go trough
@@ -33,7 +34,7 @@ class HtmlProductIterator(private val elements: Elements?) : Iterator<HtmlProduc
             32
         }
 
-        return HtmlProduct(productIndex, productCode, productName, productAmount, productUnit, productPrice, productTax, productBarCode)
+        return HtmlProduct(productIndex, productCode, productName, productAmount, productUnit, productTotal, productUnitPrice, productTax, productBarCode)
     }
 
 }

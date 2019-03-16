@@ -93,12 +93,14 @@ class SefazCouponParser {
             //conversion to cents
             val productAmount = htmlProduct.amount.replace(",", ".").toFloat()
             val productUnit = htmlProduct.unit
-            val productPrice = htmlProduct.price.replace(",", "").toLong()
+            val productTotal = htmlProduct.total.replace(",", "").toLong()
             val productCode = htmlProduct.code
             val productBarCode = htmlProduct.barcode
             val productTax = htmlProduct.tax.replace(".", "").toLong()
+            //conversion from float to long, just to avoid rounding or approximation problems 15,4500 -> 15.4500 -> 15.45 -> 1545
+            val productUnitPrice = htmlProduct.unitPrice.replace(",", ".").toFloat().toString().replace(".", "").toLong()
 
-            val product = Product(productIndex, productCode, productName, productAmount, productUnit, productPrice, productTax, productBarCode)
+            val product = Product(productIndex, productCode, productName, productAmount, productUnit, productTotal, productUnitPrice, productTax, productBarCode)
             products.add(product)
         }
 

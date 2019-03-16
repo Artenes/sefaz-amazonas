@@ -23,7 +23,6 @@ class SefazAmazonasTest {
         //the access key of the coupon is displayed in the coupon
         assertThat(response.content, containsString("1319 0322 9919 3900 1927 6500 8000 1108 4410 6115 6583"))
         assertTrue(response.cookie.isNotEmpty())
-        print("Cookie: ${response.cookie}")
 
     }
 
